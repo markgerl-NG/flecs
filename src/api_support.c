@@ -271,7 +271,9 @@ ecs_entity_t ecs_new_entity(
     }
     
     EcsType type = type_from_expr(world, name, expr);
-    ecs_add_type(world, result, type.normalized);
+    if (type.normalized) {
+        ecs_add_type(world, result, type.normalized);
+    }
 
     return result;
 }
@@ -291,7 +293,10 @@ ecs_entity_t ecs_new_prefab(
     ecs_add_entity(world, result, EcsPrefab);
 
     EcsType type = type_from_expr(world, name, expr);
-    ecs_add_type(world, result, type.normalized);
+
+    if (type.normalized) {
+        ecs_add_type(world, result, type.normalized);
+    }
 
     return result;
 }

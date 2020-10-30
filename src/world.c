@@ -201,6 +201,8 @@ ecs_world_t *ecs_mini(void) {
     world->child_tables = NULL;
     world->name_prefix = NULL;
 
+    world->partitions = ecs_paged16_new(ecs_partition_t);
+
     memset(&world->component_monitors, 0, sizeof(world->component_monitors));
     memset(&world->parent_monitors, 0, sizeof(world->parent_monitors));
 
@@ -1108,4 +1110,17 @@ void ecs_delete_table(
 
     /* Don't do generations as we want table ids to remain 32 bit */
     ecs_sparse_set_generation(world->store.tables, id);
+}
+
+void ecs_make_sparse(
+    ecs_world_t *world,
+    ecs_entity_t id)
+{
+    ecs_partition_t *p = ecs_paged16_get(
+        world->partitions, ecs_partition_t, id);
+
+    if (!p->sparse_storage) {
+        const EcsComponent *ptr = ecs_get(world, id, EcsComponent);
+        p->sparse_storage = _ecs_sparse_new(ptr->size);
+    } 
 }

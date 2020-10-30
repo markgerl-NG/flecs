@@ -434,6 +434,10 @@ typedef struct ecs_alias_t {
     ecs_entity_t entity;
 } ecs_alias_t;
 
+typedef struct ecs_partition_t {
+    ecs_sparse_t *sparse_storage;
+} ecs_partition_t;
+
 /** The world stores and manages all ECS data. An application can have more than
  * one world, but data is not shared between worlds. */
 struct ecs_world_t {
@@ -446,6 +450,11 @@ struct ecs_world_t {
 
     /* Is entity range checking enabled? */
     bool range_check_enabled;
+
+    /* -- Partition lookup -- */
+    
+    ecs_paged_t *partitions;
+
 
     /* --  Data storage -- */
 

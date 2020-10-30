@@ -809,6 +809,11 @@ FLECS_EXPORT
 void ecs_tracing_enable(
     int level);
 
+FLECS_EXPORT
+void ecs_make_sparse(
+    ecs_world_t *world,
+    ecs_entity_t id);
+
 /** @} */
 
 /**

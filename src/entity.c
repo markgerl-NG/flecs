@@ -1349,6 +1349,7 @@ void add_entities(
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
     ecs_assert(components->count < ECS_MAX_ADD_REMOVE, ECS_INVALID_PARAMETER, NULL);
     ecs_stage_t *stage = ecs_get_stage(&world);
+    ecs_assert(components->array != NULL, ECS_INVALID_PARAMETER, NULL);
 
     if (ecs_defer_add(world, stage, entity, components)) {
         return;
@@ -1409,6 +1410,13 @@ void *get_mutable(
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
     ecs_assert(component != 0, ECS_INVALID_PARAMETER, NULL);
     ecs_assert((component & ECS_COMPONENT_MASK) == component || ECS_HAS_ROLE(component, TRAIT), ECS_INVALID_PARAMETER, NULL);
+
+    // ecs_partition_t *p = ecs_paged16_get(
+    //     world->partitions, ecs_partition_t, component);
+    // ecs_sparse_t *storage;
+    // if (p && (storage = p->sparse_storage)) {
+    //     return _ecs_sparse_get_or_create(storage, 0, entity);
+    // }
 
     void *dst = NULL;
     if (ecs_get_info(world, entity, info) && info->table) {
@@ -1788,6 +1796,7 @@ void ecs_add_type(
     ecs_entity_t entity,
     ecs_type_t type)
 {
+    ecs_assert(type != NULL, ECS_INTERNAL_ERROR, NULL);
     ecs_entities_t components = ecs_type_to_entities(type);
     add_entities(world, entity, &components);
 }

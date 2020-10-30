@@ -58,16 +58,6 @@ void* array_ensure(
     uint32_t length = array->length;
 
     if (!length) {
-        // uint16_t new_offset = next_pow_of_2(index) >> 1;
-        // uint32_t new_length = next_pow_of_2(index - new_offset + 1);
-        // array->offset = new_offset;
-        // array->length = new_length;
-        
-        // ecs_assert(length != new_length, ECS_INTERNAL_ERROR, NULL);
-        // array->data = ecs_os_calloc(new_length * elem_size);
-        // ecs_assert(array->data != NULL, ECS_OUT_OF_MEMORY, NULL);
-        // // printf("new (offset = %u, length = %u) index = %u\n", array->offset, array->length, index);
-
         array->length = 1;
         array->offset = index;
         array->data = ecs_os_calloc(elem_size);
@@ -96,10 +86,6 @@ void* array_ensure(
         array->offset = new_offset;
         array->length = new_length;
 
-        // printf("lxp (offset = %u, length = %u) <= (%u, %u)\n", 
-        //     array->offset, array->length,
-        //     offset, length);
-
     } else if (index >= (offset + length)) {
         uint32_t new_length = next_pow_of_2(index + offset + 1);
         if ((new_length + offset) > PAGE_SIZE) {
@@ -126,10 +112,6 @@ void* array_ensure(
         }
 
         array->length = new_length;
-
-        // printf("rxp (offset = %u, length = %u) <= (%u, %u)\n", 
-        //     array->offset, array->length,
-        //     offset, length);
     }
 
     ecs_assert((array->offset + array->length) <= PAGE_SIZE, 
@@ -184,28 +166,12 @@ page_t* get_or_create_page(
 {
     int32_t i;
     for (i = count; i > 0; i --) {
-        // printf("%d: [%p] get page [%d] (%u, %u)\n", i, &p->pages, addr[i], p->pages.offset, p->pages.length);
         p = array_ensure(&p->pages, ECS_SIZEOF(page_t), addr[i]);
         ecs_assert(p != NULL, ECS_INTERNAL_ERROR, NULL);
     }
 
     return p;
 }
-
-    // return
-    //     (index > 0x00000000000000FF) +
-    //     (index > 0x000000000000FF00) +
-    //     (index > 0x0000000000FF0000) +
-    //     (index > 0x00000000FF000000) +
-    //     (index > 0x000000FF00000000) +
-    //     (index > 0x0000FF0000000000) +
-    //     (index > 0x00FF000000000000) ;
-
-    // return 1 +
-    //     (index > 0x000000000000FF00) +
-    //     (index > 0x0000000000FF0000) +
-    //     (index > 0x00000000FF000000) +
-    //     (index > 0x00FFFFFF00000000) * 3;
 
 static
 int16_t page_count(
