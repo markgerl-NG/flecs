@@ -5,9 +5,9 @@ static
 ecs_vector_t* resize(
     ecs_vector_t *vector,
     int16_t offset,
-    int32_t size)
+    int64_t size)
 {
-    ecs_vector_t *result = ecs_os_realloc(vector, offset + size);
+    ecs_vector_t *result = realloc(vector, offset + size);
     ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, 0);
     return result;
 }
@@ -299,7 +299,7 @@ int32_t _ecs_vector_set_size(
         }
 
         if (result < elem_count) {
-            vector = resize(vector, offset, elem_count * elem_size);
+            vector = resize(vector, offset, (uint64_t)elem_count * (uint64_t)elem_size);
             vector->size = elem_count;
             *array_inout = vector;
             result = elem_count;

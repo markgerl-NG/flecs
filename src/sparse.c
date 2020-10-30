@@ -674,6 +674,12 @@ void ecs_sparse_memory(
     int32_t *allocd,
     int32_t *used)
 {
+    *allocd += sizeof(ecs_sparse_t) +
+        sizeof(chunk_t) * ecs_vector_size(sparse->chunks) + 
+        ecs_vector_count(sparse->chunks) * 
+            (sparse->size * CHUNK_COUNT + sizeof(int32_t) * CHUNK_COUNT) +
+        sizeof(int32_t) * ecs_vector_size(sparse->dense);
+
     (void)sparse;
     (void)allocd;
     (void)used;

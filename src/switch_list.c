@@ -9,6 +9,8 @@ ecs_switch_header_t *get_header(
         return NULL;
     }
 
+    printf("value = %lu, min = %lu\n", value, sw->min);
+
     ecs_assert(value >= sw->min, ECS_INTERNAL_ERROR, NULL);
     ecs_assert(value <= sw->max, ECS_INTERNAL_ERROR, NULL);
 
