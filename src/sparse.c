@@ -40,25 +40,28 @@ chunk_t* chunk_new(
         chunks = ecs_vector_first(sparse->chunks, chunk_t);
     }
 
-    ecs_assert(chunks != NULL, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(chunks != NULL, ECS_INTERNAL_ERROR);
 
     chunk_t *result = &chunks[chunk_index];
-    ecs_assert(result->sparse == NULL, ECS_INTERNAL_ERROR, NULL);
-    ecs_assert(result->data == NULL, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(result->sparse == NULL, ECS_INTERNAL_ERROR);
+    ecs_assert(result->data == NULL, ECS_INTERNAL_ERROR);
 
     /* Initialize sparse array with zero's, as zero is used to indicate that the
      * sparse element has not been paired with a dense element. Use zero
      * as this means we can take advantage of calloc having a possibly better 
      * performance than malloc + memset. */
     result->sparse = ecs_os_calloc(ECS_SIZEOF(int32_t) * CHUNK_COUNT);
+    ecs_assert(result->sparse != NULL, ECS_OUT_OF_MEMORY);
 
     /* Initialize the data array with zero's to guarantee that data is 
      * always initialized. When an entry is removed, data is reset back to
      * zero. Initialize now, as this can take advantage of calloc. */
-    result->data = ecs_os_calloc(sparse->size * CHUNK_COUNT);
-
-    ecs_assert(result->sparse != NULL, ECS_INTERNAL_ERROR, NULL);
-    ecs_assert(result->data != NULL, ECS_INTERNAL_ERROR, NULL);
+    if (sparse->size) {
+        result->data = ecs_os_calloc(sparse->size * CHUNK_COUNT);
+        ecs_assert(result->data != NULL, ECS_OUT_OF_MEMORY);
+    } else {
+        result->data = NULL;
+    } 
 
     return result;
 }
@@ -77,7 +80,7 @@ chunk_t* get_chunk(
     int32_t chunk_index)
 {
     /* If chunk_index is below zero, application used an invalid entity id */
-    ecs_assert(chunk_index >= 0, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(chunk_index >= 0, ECS_INVALID_PARAMETER);
     chunk_t *result = ecs_vector_get(sparse->chunks, chunk_t, chunk_index);
     if (result && !result->sparse) {
         return NULL;
@@ -165,7 +168,7 @@ uint64_t create_id(
     grow_dense(sparse);
 
     chunk_t *chunk = get_or_create_chunk(sparse, CHUNK(index));
-    ecs_assert(chunk->sparse[OFFSET(index)] == 0, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(chunk->sparse[OFFSET(index)] == 0, ECS_INTERNAL_ERROR);
     
     uint64_t *dense_array = ecs_vector_first(sparse->dense, uint64_t);
     assign_index(chunk, dense_array, index, dense);
@@ -181,7 +184,7 @@ uint64_t new_index(
     int32_t dense_count = ecs_vector_count(dense);
     int32_t count = sparse->count ++;
 
-    ecs_assert(count <= dense_count, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(count <= dense_count, ECS_INTERNAL_ERROR);
 
     if (count < dense_count) {
         /* If there are unused elements in the dense array, return first */
@@ -211,7 +214,7 @@ void* try_sparse_any(
         return NULL;
     }
 
-    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR);
     return DATA(chunk->data, sparse->size, offset);
 }
 
@@ -240,7 +243,7 @@ void* try_sparse(
         return NULL;
     }
 
-    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR);
     return DATA(chunk->data, sparse->size, offset);
 }
 
@@ -254,8 +257,8 @@ void* get_sparse(
     chunk_t *chunk = get_chunk(sparse, CHUNK(index));
     int32_t offset = OFFSET(index);
     
-    ecs_assert(chunk != NULL, ECS_INTERNAL_ERROR, NULL);
-    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(chunk != NULL, ECS_INTERNAL_ERROR);
+    ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR);
 
     return DATA(chunk->data, sparse->size, offset);
 }
@@ -267,7 +270,7 @@ void swap_dense(
     int32_t a,
     int32_t b)
 {
-    ecs_assert(a != b, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(a != b, ECS_INTERNAL_ERROR);
     uint64_t *dense_array = ecs_vector_first(sparse->dense, uint64_t);
     uint64_t index_a = dense_array[a];
     uint64_t index_b = dense_array[b];
@@ -281,7 +284,7 @@ ecs_sparse_t* _ecs_sparse_new(
     ecs_size_t size)
 {
     ecs_sparse_t *result = ecs_os_calloc(ECS_SIZEOF(ecs_sparse_t));
-    ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, NULL);
+    ecs_assert(result != NULL, ECS_OUT_OF_MEMORY);
     result->size = size;
     result->max_id_local = UINT64_MAX;
     result->max_id = &result->max_id_local;
@@ -298,14 +301,14 @@ void ecs_sparse_set_id_source(
     ecs_sparse_t * sparse,
     uint64_t * id_source)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     sparse->max_id = id_source;
 }
 
 void ecs_sparse_clear(
     ecs_sparse_t *sparse)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
 
     ecs_vector_each(sparse->chunks, chunk_t, chunk, {
         chunk_free(chunk);
@@ -332,7 +335,7 @@ void ecs_sparse_free(
 uint64_t ecs_sparse_new_id(
     ecs_sparse_t *sparse)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     return new_index(sparse);
 }
 
@@ -340,7 +343,7 @@ const uint64_t* ecs_sparse_new_ids(
     ecs_sparse_t *sparse,
     int32_t new_count)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     int32_t dense_count = ecs_vector_count(sparse->dense);
     int32_t count = sparse->count;
     int32_t remaining = dense_count - count;
@@ -365,18 +368,18 @@ void* _ecs_sparse_add(
     ecs_sparse_t *sparse,
     ecs_size_t size)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
     uint64_t index = new_index(sparse);
     chunk_t *chunk = get_chunk(sparse, CHUNK(index));
-    ecs_assert(chunk != NULL, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(chunk != NULL, ECS_INTERNAL_ERROR);
     return DATA(chunk->data, size, OFFSET(index));
 }
 
 uint64_t ecs_sparse_last_id(
     ecs_sparse_t *sparse)
 {
-    ecs_assert(sparse != NULL, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(sparse != NULL, ECS_INTERNAL_ERROR);
     uint64_t *dense_array = ecs_vector_first(sparse->dense, uint64_t);
     return dense_array[sparse->count - 1];
 }
@@ -386,9 +389,9 @@ void* _ecs_sparse_get_or_create(
     ecs_size_t size,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(ecs_vector_count(sparse->dense) > 0, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
+    ecs_assert(ecs_vector_count(sparse->dense) > 0, ECS_INTERNAL_ERROR);
 
     uint64_t gen = strip_generation(&index);
     chunk_t *chunk = get_or_create_chunk(sparse, CHUNK(index));
@@ -457,8 +460,8 @@ void* _ecs_sparse_remove_get(
     ecs_size_t size,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
     chunk_t *chunk = get_or_create_chunk(sparse, CHUNK(index));
     uint64_t gen = strip_generation(&index);
     int32_t offset = OFFSET(index);
@@ -511,7 +514,7 @@ void ecs_sparse_set_generation(
     ecs_sparse_t *sparse,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     chunk_t *chunk = get_or_create_chunk(sparse, CHUNK(index));
     
     uint64_t index_w_gen = index;
@@ -532,7 +535,7 @@ bool ecs_sparse_exists(
     ecs_sparse_t *sparse,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     chunk_t *chunk = get_or_create_chunk(sparse, CHUNK(index));
     
     strip_generation(&index);
@@ -547,9 +550,9 @@ void* _ecs_sparse_get(
     ecs_size_t size,
     int32_t dense_index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(dense_index < sparse->count, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
+    ecs_assert(dense_index < sparse->count, ECS_INVALID_PARAMETER);
 
     dense_index ++;
 
@@ -569,9 +572,9 @@ void* _ecs_sparse_get_sparse(
     ecs_size_t size,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
     return try_sparse(sparse, index);
 }
 
@@ -580,9 +583,9 @@ void* _ecs_sparse_get_sparse_any(
     ecs_size_t size,
     uint64_t index)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
+    ecs_assert(!size || size == sparse->size, ECS_INVALID_PARAMETER);
     return try_sparse_any(sparse, index);
 }
 
@@ -609,7 +612,7 @@ int32_t ecs_sparse_size(
 const uint64_t* ecs_sparse_ids(
     const ecs_sparse_t *sparse)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     return &(ecs_vector_first(sparse->dense, uint64_t)[1]);
 }
 
@@ -617,7 +620,7 @@ void ecs_sparse_set_size(
     ecs_sparse_t *sparse,
     int32_t elem_count)
 {
-    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(sparse != NULL, ECS_INVALID_PARAMETER);
     ecs_vector_set_size(&sparse->dense, uint64_t, elem_count);
 }
 
@@ -642,7 +645,7 @@ void sparse_copy(
 
     set_id(dst, get_id(src));
 
-    ecs_assert(src->count == dst->count, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(src->count == dst->count, ECS_INTERNAL_ERROR);
 }
 
 ecs_sparse_t* ecs_sparse_copy(
@@ -662,7 +665,7 @@ void ecs_sparse_restore(
     ecs_sparse_t * dst,
     const ecs_sparse_t * src)
 {
-    ecs_assert(dst != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(dst != NULL, ECS_INVALID_PARAMETER);
     dst->count = 1;
     if (src) {
         sparse_copy(dst, src);
